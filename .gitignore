@@ -1,3 +1,49 @@
+# Security and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.old
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+.venv*/
+venv/
+venv*/
+ENV/
+env/
+env*/
+.python-version
+
+# Local data and generated output
+*.parquet
+*.feather
+backend/data/
+backend/generated/
+pilot-chat-log/
+
 # Logs
 logs
 *.log

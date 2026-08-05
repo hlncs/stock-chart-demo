@@ -30,7 +30,7 @@ Implement two modes.
 
 Initial Load
 
-Downloads the entire available history.
+Downloads the entire available history for the requested symbols.
 
 Append Mode
 
@@ -54,7 +54,9 @@ Support loading multiple symbols.
 
 Example
 
-python load_data.py --symbols AAPL MSFT NVDA
+python load_data.py --symbols AAPL MSFT NVDA AMZN
+
+Also support a configurable period such as 3y for daily data.
 
 Use concurrent downloads.
 

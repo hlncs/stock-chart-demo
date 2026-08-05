@@ -40,6 +40,8 @@ When enabled
 
 Show numeric input.
 
+Use the entered window value for the display label (for example, SMA 150).
+
 User enters window size.
 
 Example

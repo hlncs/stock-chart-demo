@@ -37,6 +37,8 @@ Frontend communicates only through REST.
 
 Backend loads Parquet data using Pandas.
 
+The application should support ingesting multiple symbols into local Parquet files and rendering multiple moving-average overlays on the chart simultaneously.
+
 Application structure must be modular with separation of:
 
 - API

@@ -36,7 +36,9 @@ Reloads prices.
 
 Enabling SMA
 
-Fetch moving average.
+Fetch moving average for each enabled indicator.
+
+Multiple SMAs can be enabled at once and rendered together on the chart.
 
 ↓
 
@@ -61,4 +63,6 @@ Maintain enabled SMA selections.
 Show loading spinner.
 
 Display meaningful error messages.
+
+Hovering over the chart should show the selected date with the price and each enabled moving-average value.
 ```text

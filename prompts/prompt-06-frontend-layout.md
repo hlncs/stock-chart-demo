@@ -61,6 +61,8 @@ Three Moving Average buttons
 
 Custom SMA
 
+All enabled moving averages can be displayed simultaneously on the chart.
+
 Each moving average button
 
 Can be toggled on/off

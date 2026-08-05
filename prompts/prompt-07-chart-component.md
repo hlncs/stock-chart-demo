@@ -30,7 +30,7 @@ Date
 
 Price
 
-Moving averages
+All enabled moving averages
 
 XAxis
 

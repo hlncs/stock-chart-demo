@@ -11,7 +11,7 @@ PyArrow
 
 The backend stores data in Parquet files.
 
-Each stock has historical End-of-Day prices.
+Each stock has historical End-of-Day prices, and the backend should be able to serve data for multiple symbols from local Parquet files.
 
 The backend must expose REST APIs.
 

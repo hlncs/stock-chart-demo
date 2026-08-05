@@ -61,13 +61,33 @@ export default function App() {
   useEffect(() => {
     if (!selectedTicker) return;
     const active = activeSMAs.filter((entry) => entry.enabled);
-    void Promise.all(
-      active.map(async (entry) => {
-        const window = entry.id === 'custom' ? customWindow : Number(entry.id);
-        const data = await fetchMovingAverage(selectedTicker, window, selectedPeriod);
-        setMovingAverageData(entry.id, data);
-      }),
-    ).catch(() => setError('Unable to load moving average data.'));
+    if (active.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const results = await Promise.all(
+          active.map(async (entry) => {
+            const window = entry.id === 'custom' ? customWindow : Number(entry.id);
+            const data = await fetchMovingAverage(selectedTicker, window, selectedPeriod);
+            return [entry.id, data] as const;
+          }),
+        );
+        if (!cancelled) {
+          results.forEach(([id, data]) => setMovingAverageData(id, data));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Unable to load moving average data.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedTicker, selectedPeriod, activeSMAs, customWindow, setMovingAverageData]);
 
   const chartSeries = useMemo(() => {
@@ -75,10 +95,10 @@ export default function App() {
       .filter((entry) => entry.enabled)
       .map((entry) => ({
         id: entry.id,
-        label: entry.label,
+        label: entry.id === 'custom' ? `SMA ${customWindow}` : entry.label,
         color: entry.color,
       }));
-  }, [activeSMAs]);
+  }, [activeSMAs, customWindow]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>

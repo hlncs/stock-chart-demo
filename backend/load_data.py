@@ -13,26 +13,27 @@ from app.repositories.stock_repository import StockRepository
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("load_data")
+DEFAULT_SYMBOLS = ["MSFT", "NVDA", "AMZN", "AAPL"]
 
 
 class StockLoader:
     def __init__(self, data_dir: str | Path | None = None):
         self.repository = StockRepository(data_dir=data_dir)
 
-    def load(self, symbols: List[str], initial: bool = False) -> None:
+    def load(self, symbols: List[str], initial: bool = False, period: str = "max") -> None:
         if not symbols:
             raise ValueError("At least one symbol is required")
 
         with ThreadPoolExecutor(max_workers=min(8, len(symbols))) as executor:
-            futures = [executor.submit(self._load_symbol, symbol, initial) for symbol in symbols]
+            futures = [executor.submit(self._load_symbol, symbol, initial, period) for symbol in symbols]
             for future in futures:
                 future.result()
 
-    def _load_symbol(self, symbol: str, initial: bool) -> None:
+    def _load_symbol(self, symbol: str, initial: bool, period: str) -> None:
         logger.info("Loading %s", symbol)
         try:
             ticker = yf.Ticker(symbol)
-            history = ticker.history(period="max", auto_adjust=False)
+            history = ticker.history(period=period, interval="1d", auto_adjust=False)
             if history.empty:
                 logger.warning("No history returned for %s", symbol)
                 return
@@ -70,7 +71,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Load stock data into local parquet files")
     parser.add_argument("--initial", action="store_true", help="Download the full history")
     parser.add_argument("--append", action="store_true", help="Download only new dates")
-    parser.add_argument("--symbols", nargs="+", default=["AAPL"], help="Stock symbols to load")
+    parser.add_argument("--symbols", nargs="+", default=DEFAULT_SYMBOLS, help="Stock symbols to load")
+    parser.add_argument("--period", default="max", help="yfinance period such as 3y, 2y, 1y, or max")
     return parser.parse_args()
 
 
@@ -78,7 +80,7 @@ def main() -> None:
     args = parse_args()
     initial = args.initial or not args.append
     loader = StockLoader()
-    loader.load(args.symbols, initial=initial)
+    loader.load(args.symbols, initial=initial, period=args.period)
 
 
 if __name__ == "__main__":

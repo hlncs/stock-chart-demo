@@ -1,0 +1,11 @@
+AMZN Q1 2025 Earnings Summary
+==============================
+
+Amazon reported Q1 2025 net sales of $155.7 billion, up 9% YoY, in line with guidance.
+AWS revenue grew 17% YoY to $29.3 billion, showing acceleration from the prior quarter.
+Advertising revenue reached $13.9 billion, up 19% YoY — high-margin segment continues expansion.
+Operating income of $18.4 billion represents a record operating margin of 11.8%.
+Company raised Q2 2025 revenue guidance to $159–164 billion with continued margin expansion expected.
+
+Risks: Increased investment in AI infrastructure (Project Kuiper, Trainium chips) elevates capex.
+Ongoing regulatory scrutiny in the EU and US over marketplace practices and antitrust concerns.

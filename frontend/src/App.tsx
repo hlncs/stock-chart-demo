@@ -1,9 +1,26 @@
-import { Alert, Box, CircularProgress, Container, Divider, List, ListItemButton, ListItemText, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Container,
+  Divider,
+  List,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
+import { AIAnalysisPane } from './components/AIAnalysisPane';
 import { MovingAverageToolbar } from './components/MovingAverageToolbar';
 import { StockChart } from './components/StockChart';
-import { fetchMovingAverage, fetchPrices, fetchSymbols } from './services/api';
+import { fetchAIAnalysis, fetchMovingAverage, fetchPrices, fetchSymbols } from './services/api';
 import { useAppStore } from './store/useAppStore';
+import { AIAnalysis } from './types';
+
 const periods = ['1M', 'YTD', '1Y', '3Y'];
 
 export default function App() {
@@ -22,6 +39,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // AI analysis state
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   useEffect(() => {
     void (async () => {
       try {
@@ -30,7 +52,7 @@ export default function App() {
         if (!selectedTicker && result.length > 0) {
           selectTicker(result[0]);
         }
-      } catch (err) {
+      } catch {
         setError('Unable to load symbols from the backend.');
       }
     })();
@@ -47,7 +69,7 @@ export default function App() {
         if (!cancelled) {
           setPriceData(result.map((entry) => ({ date: entry.date, close: entry.close })));
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) setError('Unable to load price history.');
       } finally {
         if (!cancelled) setLoading(false);
@@ -61,9 +83,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedTicker) return;
     const active = activeSMAs.filter((entry) => entry.enabled);
-    if (active.length === 0) {
-      return;
-    }
+    if (active.length === 0) return;
 
     let cancelled = false;
     void (async () => {
@@ -78,10 +98,8 @@ export default function App() {
         if (!cancelled) {
           results.forEach(([id, data]) => setMovingAverageData(id, data));
         }
-      } catch (err) {
-        if (!cancelled) {
-          setError('Unable to load moving average data.');
-        }
+      } catch {
+        if (!cancelled) setError('Unable to load moving average data.');
       }
     })();
 
@@ -89,6 +107,29 @@ export default function App() {
       cancelled = true;
     };
   }, [selectedTicker, selectedPeriod, activeSMAs, customWindow, setMovingAverageData]);
+
+  // Fetch AI analysis whenever ticker, period, or custom SMA window changes
+  useEffect(() => {
+    if (!selectedTicker) return;
+    let cancelled = false;
+    void (async () => {
+      setAiLoading(true);
+      setAiError(null);
+      try {
+        // Use max(customWindow, 150) to respect the long-term rule
+        const effectiveWindow = Math.max(customWindow, 150);
+        const result = await fetchAIAnalysis(selectedTicker, selectedPeriod, effectiveWindow);
+        if (!cancelled) setAiAnalysis(result);
+      } catch {
+        if (!cancelled) setAiError('Unable to load AI analysis.');
+      } finally {
+        if (!cancelled) setAiLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTicker, selectedPeriod, customWindow]);
 
   const chartSeries = useMemo(() => {
     return activeSMAs
@@ -104,21 +145,33 @@ export default function App() {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-          <Box sx={{ width: { xs: '100%', md: '24%' }, maxHeight: 600, overflow: 'auto' }}>
+          {/* Ticker list */}
+          <Box sx={{ width: { xs: '100%', md: '16%' }, maxHeight: 600, overflow: 'auto' }}>
             <Typography variant="h6" gutterBottom>
               Ticker List
             </Typography>
             <List dense>
               {symbols.map((symbol) => (
-                <ListItemButton key={symbol} selected={symbol === selectedTicker} onClick={() => selectTicker(symbol)}>
+                <ListItemButton
+                  key={symbol}
+                  selected={symbol === selectedTicker}
+                  onClick={() => selectTicker(symbol)}
+                >
                   <ListItemText primary={symbol} />
                 </ListItemButton>
               ))}
             </List>
           </Box>
-          <Box sx={{ flex: 1 }}>
+
+          {/* Chart area */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Stack spacing={2}>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={2}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', md: 'center' }}
+              >
                 <Typography variant="h4">Stock Chart Demo</Typography>
                 <ToggleButtonGroup
                   color="primary"
@@ -142,7 +195,13 @@ export default function App() {
                 </Box>
               ) : (
                 <StockChart
-                  priceData={priceData.map((entry) => ({ date: entry.date, open: 0, high: 0, low: 0, close: entry.close }))}
+                  priceData={priceData.map((entry) => ({
+                    date: entry.date,
+                    open: 0,
+                    high: 0,
+                    low: 0,
+                    close: entry.close,
+                  }))}
                   movingAverages={Object.fromEntries(
                     chartSeries.map((entry) => [entry.id, movingAverageData[entry.id] ?? []]),
                   )}
@@ -156,6 +215,23 @@ export default function App() {
                 />
               )}
             </Stack>
+          </Box>
+
+          {/* AI analysis pane */}
+          <Box
+            sx={{
+              width: { xs: '100%', md: 'auto' },
+              borderLeft: { md: 1 },
+              borderColor: { md: 'divider' },
+              pl: { md: 3 },
+            }}
+          >
+            <AIAnalysisPane
+              symbol={selectedTicker}
+              analysis={aiAnalysis}
+              loading={aiLoading}
+              error={aiError}
+            />
           </Box>
         </Stack>
       </Paper>

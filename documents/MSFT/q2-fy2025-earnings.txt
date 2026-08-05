@@ -1,0 +1,11 @@
+MSFT Q2 FY2025 Earnings Summary
+================================
+
+Microsoft reported Q2 FY2025 revenue of $69.6 billion, up 12% year-over-year, beating consensus of $68.1 billion.
+Azure cloud revenue grew 31% YoY, accelerating from last quarter due to strong AI workload demand.
+Copilot AI integrations drove record enterprise contract renewals across Office 365 and Teams.
+Operating income grew 17% with operating margin expanding to 45.2%.
+Company raised full-year guidance citing strong AI adoption across enterprise customers.
+
+Risks: Increased capital expenditure for AI infrastructure may pressure free cash flow in the near term.
+Regulatory investigations in EU regarding bundling of Teams with Office 365 continue.

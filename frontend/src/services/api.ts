@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PricePoint, MovingAveragePoint } from '../types';
+import { PricePoint, MovingAveragePoint, AIAnalysis } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -19,6 +19,17 @@ export const fetchPrices = async (symbol: string, period: string) => {
 export const fetchMovingAverage = async (symbol: string, window: number, period: string) => {
   const response = await api.get<MovingAveragePoint[]>(`/moving-average/${symbol}`, {
     params: { period, window },
+  });
+  return response.data;
+};
+
+export const fetchAIAnalysis = async (
+  symbol: string,
+  period: string,
+  customWindow: number = 150,
+): Promise<AIAnalysis> => {
+  const response = await api.get<AIAnalysis>(`/ai-analysis/${symbol}`, {
+    params: { period, custom_window: customWindow },
   });
   return response.data;
 };

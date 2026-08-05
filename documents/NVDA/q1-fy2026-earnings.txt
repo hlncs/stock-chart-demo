@@ -1,0 +1,11 @@
+NVDA Q1 FY2026 Earnings Summary
+================================
+
+NVIDIA reported record quarterly revenue of $44.1 billion for Q1 FY2026, up 69% year-over-year.
+Data Center revenue reached $39.1 billion, driven by Blackwell GPU architecture demand from hyperscalers.
+Gross margin declined slightly to 71.3% (vs 74.6% prior quarter) due to ramp-up costs for new Blackwell systems.
+Management guided Q2 FY2026 revenue at approximately $45 billion (+/- 2%), above Wall Street expectations.
+Strong demand pipeline with order backlog extending into 2026 — positive outlook for continued growth.
+
+Risks: Export restrictions to China remain a headwind; potential supply constraints on CoWoS packaging.
+Competition from AMD MI350 and custom silicon from Google/Amazon/Microsoft could erode long-term market share.

@@ -34,4 +34,22 @@ an invisible sliver at the bottom of the chart.
 Responsive container.
 Memoize expensive calculations.
 Support datasets up to 20,000 rows.
+
+Below the main chart, render two separate indicator panels (each 160px tall):
+
+RSIChart
+  Lightweight Charts canvas
+  RSI line in configured colour
+  Dashed overbought reference line (default 70)
+  Dashed oversold reference line (default 30)
+  Label showing period and OB/OS levels
+
+MACDChart
+  Lightweight Charts canvas
+  MACD line, signal line, histogram bars
+  Histogram bars coloured individually (up/down colours)
+  Label showing fast/slow/signal periods
+
+Both panels must update reactively when data or config changes
+without remounting the chart.
 ```

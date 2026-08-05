@@ -1,5 +1,16 @@
 import axios from 'axios';
-import { AddSymbolResponse, AddTransactionRequest, AIAnalysis, MovingAveragePoint, PortfolioData, PricePoint, Transaction } from '../types';
+import {
+  AddSymbolResponse,
+  AddTransactionRequest,
+  AIAnalysis,
+  IndicatorData,
+  MACDConfig,
+  MovingAveragePoint,
+  PortfolioData,
+  PricePoint,
+  RSIConfig,
+  Transaction,
+} from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -58,4 +69,22 @@ export const addSymbol = async (symbol: string, period = 'max'): Promise<AddSymb
 
 export const deleteSymbol = async (symbol: string): Promise<void> => {
   await api.delete(`/symbols/${symbol}`);
+};
+
+export const fetchIndicators = async (
+  symbol: string,
+  period: string,
+  rsi: RSIConfig,
+  macd: MACDConfig,
+): Promise<IndicatorData> => {
+  const response = await api.get<IndicatorData>(`/indicators/${symbol}`, {
+    params: {
+      period,
+      rsi_period: rsi.period,
+      macd_fast: macd.fast,
+      macd_slow: macd.slow,
+      macd_signal: macd.signal,
+    },
+  });
+  return response.data;
 };

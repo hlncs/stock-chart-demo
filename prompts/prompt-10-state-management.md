@@ -18,6 +18,10 @@ Actions
   setCustomWindow(window)
   setPriceData(data)            — must include volume field
   setMovingAverageData(id, data)
+  rsiConfig     RSIConfig   — period, color, obLevel, osLevel
+  macdConfig    MACDConfig  — fast, slow, signal, macdColor, signalColor, histUpColor, histDownColor
+  setRsiConfig(partial)
+  setMacdConfig(partial)
 
 Keep state normalized.
 Avoid unnecessary rerenders.

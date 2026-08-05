@@ -22,6 +22,8 @@ Enabling SMA           → fetch moving average for each enabled indicator
 Changing SMA color     → immediately updates line color (no backend call)
 Changing ticker        → reload price history + enabled moving averages
                          Maintain current period and SMA selections
+Changing indicator config (RSI period, MACD fast/slow/signal, any colour)
+                       → re-fetch /indicators/{symbol} and re-render panels
 Adding a symbol        → POST /symbols, refresh ticker list, select new symbol
 Removing a symbol      → DELETE /symbols/{symbol}, refresh list,
                          auto-select first remaining ticker if deleted was selected
@@ -31,9 +33,18 @@ Display meaningful error messages.
 
 Hover tooltip shows
   Date
-  Price ($xxx.xx)
+  Price ($xxx.xx) and OHLC values
   Each enabled SMA value ($xxx.xx)
   Volume (formatted, e.g. 67.88M) — always at the bottom of the tooltip
+
+Below the main chart (always visible):
+  RSIChart panel (160px) — RSI line, OB/OS dashed reference lines
+  MACDChart panel (160px) — MACD line, signal line, coloured histogram
+
+IndicatorToolbar (between MovingAverageToolbar and chart):
+  RSI section (collapsible): period, OB level, OS level, line colour
+  MACD section (collapsible): fast, slow, signal + 4 colour pickers
+  Changes immediately re-fetch /indicators and re-render panels
 
 Portfolio view (toggled via "Portfolio" link in ticker list header)
   Replaces chart area

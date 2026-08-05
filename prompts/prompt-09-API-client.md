@@ -15,6 +15,8 @@ Endpoints
 
   GET  /ai-analysis/{symbol}?period=&custom_window=
 
+  GET  /indicators/{symbol}?period=&rsi_period=&macd_fast=&macd_slow=&macd_signal=
+
   GET  /portfolio
   GET  /portfolio/transactions/{symbol}
   POST /portfolio/transactions
@@ -27,7 +29,11 @@ TypeScript interfaces for all request/response shapes (see types.ts):
   PortfolioHolding    — symbol, shares, avg_cost, current_price, total_cost, market_value, profit_dollars, profit_percent
   Transaction         — id?, symbol, action, date, shares, price_per_share, commission
   AddTransactionRequest
-  AddSymbolResponse   — symbol, rows_loaded
+  RSIPoint    { date, value }
+  MACDPoint   { date, macd, signal_line, histogram }
+  IndicatorData { rsi, macd }
+  RSIConfig   { period, color, obLevel, osLevel }
+  MACDConfig  { fast, slow, signal, macdColor, signalColor, histUpColor, histDownColor }
 
 Implement
   Centralized Axios instance with base URL and timeout

@@ -96,3 +96,41 @@ export interface AddSymbolResponse {
   symbol: string;
   rows_loaded: number;
 }
+
+// ---------------------------------------------------------------------------
+// Technical Indicators
+// ---------------------------------------------------------------------------
+
+export interface RSIPoint {
+  date: string;
+  value: number;
+}
+
+export interface MACDPoint {
+  date: string;
+  macd: number;
+  signal_line: number;
+  histogram: number;
+}
+
+export interface IndicatorData {
+  rsi: RSIPoint[];
+  macd: MACDPoint[];
+}
+
+export interface RSIConfig {
+  period: number;
+  color: string;
+  obLevel: number;  // overbought line, default 70
+  osLevel: number;  // oversold line, default 30
+}
+
+export interface MACDConfig {
+  fast: number;
+  slow: number;
+  signal: number;
+  macdColor: string;
+  signalColor: string;
+  histUpColor: string;
+  histDownColor: string;
+}

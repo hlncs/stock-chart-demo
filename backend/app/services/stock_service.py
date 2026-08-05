@@ -43,6 +43,8 @@ class StockService:
             cutoff = latest_date - pd.DateOffset(years=1)
         elif period == "3Y":
             cutoff = latest_date - pd.DateOffset(years=3)
+        elif period == "5Y":
+            cutoff = latest_date - pd.DateOffset(years=5)
         else:
             raise ValueError("Unsupported period")
 

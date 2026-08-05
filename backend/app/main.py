@@ -8,10 +8,13 @@ from app.models.schemas import (
     AddTransactionRequest,
     DocumentInsightResponse,
     ErrorResponse,
+    IndicatorResponse,
+    MACDPoint,
     MovingAveragePoint,
     PortfolioHolding,
     PortfolioResponse,
     PricePoint,
+    RSIPoint,
     SMASignalResponse,
     SymbolListResponse,
     Transaction,
@@ -19,6 +22,7 @@ from app.models.schemas import (
 )
 from app.repositories.stock_repository import StockRepository
 from app.services.ai_analysis_service import AIAnalysisService
+from app.services.indicator_service import IndicatorService
 from app.services.stock_service import StockService
 
 app = FastAPI(title="Stock Chart Demo API")
@@ -33,6 +37,7 @@ app.add_middleware(
 repository = StockRepository()
 service = StockService(repository)
 ai_service = AIAnalysisService()
+indicator_service = IndicatorService()
 
 
 @app.get("/symbols", response_model=SymbolListResponse)
@@ -106,6 +111,47 @@ async def get_moving_average(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/indicators/{symbol}", response_model=IndicatorResponse)
+async def get_indicators(
+    symbol: str,
+    period: str | None = Query(default=None),
+    rsi_period: int = Query(default=14, ge=2, description="RSI look-back period"),
+    macd_fast: int = Query(default=12, ge=2, description="MACD fast EMA period"),
+    macd_slow: int = Query(default=26, ge=3, description="MACD slow EMA period"),
+    macd_signal: int = Query(default=9, ge=1, description="MACD signal EMA period"),
+) -> IndicatorResponse:
+    """Return RSI and MACD indicator series for a symbol."""
+    try:
+        frame = repository.get_prices(symbol)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if period:
+        try:
+            frame = service.filter_by_period(frame, period)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if macd_fast >= macd_slow:
+        raise HTTPException(status_code=400, detail="macd_fast must be less than macd_slow")
+
+    rsi_df = indicator_service.calculate_rsi(frame, period=rsi_period)
+    macd_df = indicator_service.calculate_macd(frame, fast=macd_fast, slow=macd_slow, signal=macd_signal)
+
+    return IndicatorResponse(
+        rsi=[RSIPoint(date=row["date"], value=row["value"]) for _, row in rsi_df.iterrows()],
+        macd=[
+            MACDPoint(
+                date=row["date"],
+                macd=row["macd"],
+                signal_line=row["signal_line"],
+                histogram=row["histogram"],
+            )
+            for _, row in macd_df.iterrows()
+        ],
+    )
 
 
 @app.get("/ai-analysis/{symbol}", response_model=AIAnalysisResponse)

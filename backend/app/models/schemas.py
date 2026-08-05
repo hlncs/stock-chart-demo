@@ -113,3 +113,25 @@ class AddTransactionRequest(BaseModel):
 
 class TransactionListResponse(BaseModel):
     transactions: List[Transaction]
+
+
+# ---------------------------------------------------------------------------
+# Technical Indicators
+# ---------------------------------------------------------------------------
+
+
+class RSIPoint(BaseModel):
+    date: date
+    value: float
+
+
+class MACDPoint(BaseModel):
+    date: date
+    macd: float
+    signal_line: float
+    histogram: float
+
+
+class IndicatorResponse(BaseModel):
+    rsi: List[RSIPoint]
+    macd: List[MACDPoint]

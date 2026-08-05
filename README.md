@@ -227,8 +227,13 @@ cd backend
 ../.VENV/bin/python -m pytest tests/ -v
 ```
 
-Current test suite: **28 tests** — moving average service + portfolio API
-end-to-end tests (uses isolated temp directories, does not touch live data).
+Current test suite: **60 tests**
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `test_moving_average_service.py` | 3 | SMA calculation |
+| `test_portfolio.py` | 25 | Portfolio API end-to-end |
+| `test_indicators.py` | 32 | RSI/MACD service + API |
 
 ### Frontend
 
@@ -259,6 +264,7 @@ See `prompts/prompt-30-frontend-tests.md` for the full test specification
 | DELETE | `/symbols/{symbol}` | Remove a symbol |
 | GET    | `/prices/{symbol}?period=` | OHLCV price history |
 | GET    | `/moving-average/{symbol}?period=&window=` | SMA values |
+| GET    | `/indicators/{symbol}?period=&rsi_period=&macd_fast=&macd_slow=&macd_signal=` | RSI + MACD |
 | GET    | `/ai-analysis/{symbol}?period=&custom_window=` | AI buy/hold/sell analysis |
 | GET    | `/portfolio` | Portfolio summary (derived from transactions) |
 | GET    | `/portfolio/transactions/{symbol}` | Transaction history for a symbol |

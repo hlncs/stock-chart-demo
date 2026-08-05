@@ -4,6 +4,7 @@ export interface PricePoint {
   high: number;
   low: number;
   close: number;
+  volume: number;
 }
 
 export interface MovingAveragePoint {
@@ -47,4 +48,51 @@ export interface AIAnalysis {
   short_term: SMASignal;
   long_term: SMASignal;
   document_insights: DocumentInsight[];
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio
+// ---------------------------------------------------------------------------
+
+export interface PortfolioHolding {
+  symbol: string;
+  shares: number;
+  avg_cost: number;
+  current_price: number;
+  total_cost: number;
+  market_value: number;
+  profit_dollars: number;
+  profit_percent: number;
+}
+
+export interface PortfolioData {
+  holdings: PortfolioHolding[];
+  total_cost: number;
+  total_market_value: number;
+  total_profit_dollars: number;
+  total_profit_percent: number;
+}
+
+export interface Transaction {
+  id?: number;
+  symbol: string;
+  action: 'BUY' | 'SELL';
+  date: string;
+  shares: number;
+  price_per_share: number;
+  commission: number;
+}
+
+export interface AddTransactionRequest {
+  symbol: string;
+  action: 'BUY' | 'SELL';
+  date: string;
+  shares: number;
+  price_per_share: number;
+  commission: number;
+}
+
+export interface AddSymbolResponse {
+  symbol: string;
+  rows_loaded: number;
 }

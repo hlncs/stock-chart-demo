@@ -1,38 +1,25 @@
 # Prompt 10 - State Management
 ```text
-Implement global state using Zustand.
+Implement global state using Zustand (persisted to localStorage).
 
 State includes
-
-Selected ticker
-
-Selected period
-
-Enabled moving averages
-
-Selected colors
-
-Custom SMA window
-
-Loaded prices
-
-Loaded moving averages
+  selectedTicker     string
+  selectedPeriod     string
+  activeSMAs         SMAConfig[]   — id, label, enabled, color, window?
+  customWindow       number
+  priceData          Array<{ date, close, volume }>   ← volume required for tooltip
+  movingAverageData  Record<string, Array<{ date, value }>>
 
 Actions
-
-selectTicker()
-
-selectPeriod()
-
-toggleSMA()
-
-setColor()
-
-setCustomWindow()
+  selectTicker(ticker)
+  selectPeriod(period)
+  toggleSMA(id, enabled)
+  setColor(id, color)
+  setCustomWindow(window)
+  setPriceData(data)            — must include volume field
+  setMovingAverageData(id, data)
 
 Keep state normalized.
-
 Avoid unnecessary rerenders.
-
 Memoize selectors.
 ```

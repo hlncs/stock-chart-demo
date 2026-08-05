@@ -3,12 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.models.schemas import (
     AIAnalysisResponse,
+    AddSymbolRequest,
+    AddSymbolResponse,
+    AddTransactionRequest,
     DocumentInsightResponse,
     ErrorResponse,
     MovingAveragePoint,
+    PortfolioHolding,
+    PortfolioResponse,
     PricePoint,
     SMASignalResponse,
     SymbolListResponse,
+    Transaction,
+    TransactionListResponse,
 )
 from app.repositories.stock_repository import StockRepository
 from app.services.ai_analysis_service import AIAnalysisService
@@ -31,6 +38,48 @@ ai_service = AIAnalysisService()
 @app.get("/symbols", response_model=SymbolListResponse)
 async def list_symbols() -> SymbolListResponse:
     return SymbolListResponse(symbols=service.list_symbols())
+
+
+@app.post("/symbols", response_model=AddSymbolResponse, status_code=201)
+async def add_symbol(req: AddSymbolRequest) -> AddSymbolResponse:
+    """Download price history for a new symbol via yfinance and save it."""
+    import pandas as pd
+    import yfinance as yf
+
+    symbol = req.symbol.strip().upper()
+    if not symbol:
+        raise HTTPException(status_code=422, detail="Symbol must not be empty.")
+
+    # Reject if already loaded
+    if symbol in [s.upper() for s in service.list_symbols()]:
+        raise HTTPException(status_code=409, detail=f"{symbol} is already in the ticker list.")
+
+    try:
+        ticker = yf.Ticker(symbol)
+        history = ticker.history(period=req.period, interval="1d", auto_adjust=False)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch data from yfinance: {exc}") from exc
+
+    if history.empty:
+        raise HTTPException(status_code=404, detail=f"No price data found for symbol {symbol}.")
+
+    history = history.reset_index()
+    history = history[["Date", "Open", "High", "Low", "Close", "Volume"]]
+    history.columns = pd.Index(["date", "open", "high", "low", "close", "volume"])
+    history["date"] = pd.to_datetime(history["date"]).dt.date
+    history = history.sort_values("date").drop_duplicates(subset=["date"])
+
+    repository.save_prices(symbol, history)
+    return AddSymbolResponse(symbol=symbol, rows_loaded=len(history))
+
+
+@app.delete("/symbols/{symbol}", status_code=204)
+async def delete_symbol(symbol: str) -> None:
+    """Remove a symbol's price data from the ticker list."""
+    try:
+        repository.delete_symbol(symbol)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.get("/prices/{symbol}", response_model=list[PricePoint])
@@ -105,4 +154,144 @@ async def get_ai_analysis(
             )
             for doc in result.document_insights
         ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Portfolio endpoints
+# ---------------------------------------------------------------------------
+
+def _compute_holdings(repository: StockRepository) -> list[PortfolioHolding]:
+    """Derive current holdings from the transactions ledger."""
+    df = repository.get_transactions()
+    if df.empty:
+        return []
+
+    holdings = []
+    symbols = df["symbol"].str.upper().unique()
+    for symbol in sorted(symbols):
+        rows = df[df["symbol"].str.upper() == symbol]
+        net_shares = 0.0
+        total_cost_basis = 0.0
+
+        for _, row in rows.sort_values("date").iterrows():
+            s = float(row["shares"])
+            p = float(row["price_per_share"])
+            c = float(row["commission"])
+            if str(row["action"]).upper() == "BUY":
+                total_cost_basis += s * p + c
+                net_shares += s
+            else:  # SELL — reduce cost basis proportionally
+                if net_shares > 0:
+                    avg = total_cost_basis / net_shares
+                    total_cost_basis -= avg * s
+                net_shares -= s
+
+        net_shares = max(net_shares, 0.0)
+        if net_shares == 0:
+            continue  # fully sold, skip from summary
+
+        avg_cost = (total_cost_basis / net_shares) if net_shares > 0 else 0.0
+
+        try:
+            current_price = repository.get_latest_price(symbol)
+        except FileNotFoundError:
+            current_price = 0.0
+
+        market_value = net_shares * current_price
+        profit_dollars = market_value - total_cost_basis
+        profit_percent = (profit_dollars / total_cost_basis * 100) if total_cost_basis != 0 else 0.0
+
+        holdings.append(
+            PortfolioHolding(
+                symbol=symbol,
+                shares=net_shares,
+                avg_cost=avg_cost,
+                current_price=current_price,
+                total_cost=total_cost_basis,
+                market_value=market_value,
+                profit_dollars=profit_dollars,
+                profit_percent=profit_percent,
+            )
+        )
+    return holdings
+
+
+@app.get("/portfolio", response_model=PortfolioResponse)
+async def get_portfolio() -> PortfolioResponse:
+    """Return portfolio summary derived from the transactions ledger."""
+    holdings = _compute_holdings(repository)
+
+    total_cost = sum(h.total_cost for h in holdings)
+    total_market_value = sum(h.market_value for h in holdings)
+    total_profit_dollars = total_market_value - total_cost
+    total_profit_percent = (total_profit_dollars / total_cost * 100) if total_cost != 0 else 0.0
+
+    return PortfolioResponse(
+        holdings=holdings,
+        total_cost=total_cost,
+        total_market_value=total_market_value,
+        total_profit_dollars=total_profit_dollars,
+        total_profit_percent=total_profit_percent,
+    )
+
+
+@app.get("/portfolio/transactions/{symbol}", response_model=TransactionListResponse)
+async def get_transactions(symbol: str) -> TransactionListResponse:
+    """Return all transactions for a given symbol."""
+    df = repository.get_transactions(symbol=symbol)
+    transactions = [
+        Transaction(
+            id=int(row["id"]) if "id" in row and row["id"] is not None else None,
+            symbol=str(row["symbol"]).upper(),
+            action=str(row["action"]).upper(),  # type: ignore[arg-type]
+            date=row["date"],
+            shares=float(row["shares"]),
+            price_per_share=float(row["price_per_share"]),
+            commission=float(row["commission"]),
+        )
+        for _, row in df.iterrows()
+    ]
+    return TransactionListResponse(transactions=transactions)
+
+
+@app.post("/portfolio/transactions", response_model=Transaction, status_code=201)
+async def add_transaction(req: AddTransactionRequest) -> Transaction:
+    """Add a BUY or SELL transaction to the ledger."""
+    symbol = req.symbol.upper()
+    # Validate symbol exists (price data must exist)
+    try:
+        repository.get_prices(symbol)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown symbol: {symbol}") from exc
+
+    # Validate sell doesn't exceed holdings
+    if req.action == "SELL":
+        holdings = _compute_holdings(repository)
+        holding = next((h for h in holdings if h.symbol == symbol), None)
+        current_shares = holding.shares if holding else 0.0
+        if req.shares > current_shares:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot sell {req.shares} shares; only {current_shares} held.",
+            )
+
+    record = repository.add_transaction(
+        {
+            "symbol": symbol,
+            "action": req.action,
+            "date": str(req.date),
+            "shares": req.shares,
+            "price_per_share": req.price_per_share,
+            "commission": req.commission,
+        }
+    )
+    return Transaction(
+        id=int(record["id"]),
+        symbol=str(record["symbol"]),
+        action=str(record["action"]),  # type: ignore[arg-type]
+        date=record["date"],
+        shares=float(record["shares"]),
+        price_per_share=float(record["price_per_share"]),
+        commission=float(record["commission"]),
     )

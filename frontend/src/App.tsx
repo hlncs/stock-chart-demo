@@ -4,19 +4,18 @@ import {
   CircularProgress,
   Container,
   Divider,
-  List,
-  ListItemButton,
-  ListItemText,
   Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AIAnalysisPane } from './components/AIAnalysisPane';
 import { MovingAverageToolbar } from './components/MovingAverageToolbar';
+import { PortfolioPane } from './components/PortfolioPane';
 import { StockChart } from './components/StockChart';
+import { TickerList } from './components/TickerList';
 import { fetchAIAnalysis, fetchMovingAverage, fetchPrices, fetchSymbols } from './services/api';
 import { useAppStore } from './store/useAppStore';
 import { AIAnalysis } from './types';
@@ -39,24 +38,33 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Portfolio view state
+  const [showPortfolio, setShowPortfolio] = useState(false);
+
   // AI analysis state
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const result = await fetchSymbols();
-        setSymbols(result);
-        if (!selectedTicker && result.length > 0) {
-          selectTicker(result[0]);
-        }
-      } catch {
-        setError('Unable to load symbols from the backend.');
+  const reloadSymbols = useCallback(async () => {
+    try {
+      const result = await fetchSymbols();
+      setSymbols(result);
+      if (!selectedTicker && result.length > 0) {
+        selectTicker(result[0]);
       }
-    })();
+      // If the currently selected ticker was deleted, select the first remaining one
+      if (selectedTicker && !result.includes(selectedTicker)) {
+        selectTicker(result[0] ?? '');
+      }
+    } catch {
+      setError('Unable to load symbols from the backend.');
+    }
   }, [selectedTicker, selectTicker]);
+
+  useEffect(() => {
+    void reloadSymbols();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!selectedTicker) return;
@@ -67,7 +75,7 @@ export default function App() {
       try {
         const result = await fetchPrices(selectedTicker, selectedPeriod);
         if (!cancelled) {
-          setPriceData(result.map((entry) => ({ date: entry.date, close: entry.close })));
+          setPriceData(result.map((entry) => ({ date: entry.date, close: entry.close, volume: entry.volume ?? 0 })));
         }
       } catch {
         if (!cancelled) setError('Unable to load price history.');
@@ -136,7 +144,7 @@ export default function App() {
       .filter((entry) => entry.enabled)
       .map((entry) => ({
         id: entry.id,
-        label: entry.id === 'custom' ? `SMA ${customWindow}` : entry.label,
+        label: entry.id === 'custom' ? `${customWindow} SMA` : entry.label,
         color: entry.color,
       }));
   }, [activeSMAs, customWindow]);
@@ -146,25 +154,20 @@ export default function App() {
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
           {/* Ticker list */}
-          <Box sx={{ width: { xs: '100%', md: '16%' }, maxHeight: 600, overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>
-              Ticker List
-            </Typography>
-            <List dense>
-              {symbols.map((symbol) => (
-                <ListItemButton
-                  key={symbol}
-                  selected={symbol === selectedTicker}
-                  onClick={() => selectTicker(symbol)}
-                >
-                  <ListItemText primary={symbol} />
-                </ListItemButton>
-              ))}
-            </List>
-          </Box>
+          <TickerList
+            symbols={symbols}
+            selectedTicker={selectedTicker}
+            showPortfolio={showPortfolio}
+            onSelectTicker={(symbol) => { selectTicker(symbol); setShowPortfolio(false); }}
+            onTogglePortfolio={() => setShowPortfolio((v) => !v)}
+            onSymbolsChanged={() => void reloadSymbols()}
+          />
 
-          {/* Chart area */}
+          {/* Chart area / Portfolio */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
+            {showPortfolio ? (
+              <PortfolioPane symbols={symbols} />
+            ) : (
             <Stack spacing={2}>
               <Stack
                 direction={{ xs: 'column', md: 'row' }}
@@ -201,6 +204,7 @@ export default function App() {
                     high: 0,
                     low: 0,
                     close: entry.close,
+                    volume: entry.volume,
                   }))}
                   movingAverages={Object.fromEntries(
                     chartSeries.map((entry) => [entry.id, movingAverageData[entry.id] ?? []]),
@@ -215,9 +219,11 @@ export default function App() {
                 />
               )}
             </Stack>
+            )}
           </Box>
 
           {/* AI analysis pane */}
+          {!showPortfolio && (
           <Box
             sx={{
               width: { xs: '100%', md: 'auto' },
@@ -233,6 +239,7 @@ export default function App() {
               error={aiError}
             />
           </Box>
+          )}
         </Stack>
       </Paper>
     </Container>

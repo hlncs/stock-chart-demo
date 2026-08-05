@@ -12,6 +12,7 @@ class PricePoint(BaseModel):
     high: float
     low: float
     close: float
+    volume: int = 0
 
 
 class MovingAveragePoint(BaseModel):
@@ -25,6 +26,16 @@ class ErrorResponse(BaseModel):
 
 class SymbolListResponse(BaseModel):
     symbols: List[str]
+
+
+class AddSymbolRequest(BaseModel):
+    symbol: str = Field(..., min_length=1, max_length=10)
+    period: str = Field(default="max", description="yfinance period: max, 5y, 3y, 2y, 1y")
+
+
+class AddSymbolResponse(BaseModel):
+    symbol: str
+    rows_loaded: int
 
 
 # ---------------------------------------------------------------------------
@@ -55,3 +66,50 @@ class AIAnalysisResponse(BaseModel):
     short_term: SMASignalResponse
     long_term: SMASignalResponse
     document_insights: List[DocumentInsightResponse] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Portfolio
+# ---------------------------------------------------------------------------
+
+
+class PortfolioHolding(BaseModel):
+    symbol: str
+    shares: float
+    avg_cost: float
+    current_price: float
+    total_cost: float
+    market_value: float
+    profit_dollars: float
+    profit_percent: float
+
+
+class PortfolioResponse(BaseModel):
+    holdings: List[PortfolioHolding]
+    total_cost: float
+    total_market_value: float
+    total_profit_dollars: float
+    total_profit_percent: float
+
+
+class Transaction(BaseModel):
+    id: Optional[int] = None
+    symbol: str
+    action: Literal["BUY", "SELL"]
+    date: date
+    shares: float
+    price_per_share: float
+    commission: float = Field(default=0.0)
+
+
+class AddTransactionRequest(BaseModel):
+    symbol: str
+    action: Literal["BUY", "SELL"]
+    date: date
+    shares: float = Field(..., gt=0)
+    price_per_share: float = Field(..., gt=0)
+    commission: float = Field(default=0.0, ge=0)
+
+
+class TransactionListResponse(BaseModel):
+    transactions: List[Transaction]

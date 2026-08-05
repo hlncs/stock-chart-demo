@@ -7,14 +7,14 @@ interface AppState {
   selectedPeriod: string;
   activeSMAs: SMAConfig[];
   customWindow: number;
-  priceData: Array<{ date: string; close: number }>;
+  priceData: Array<{ date: string; close: number; volume: number }>;
   movingAverageData: Record<string, Array<{ date: string; value: number }>>;
   selectTicker: (ticker: string) => void;
   selectPeriod: (period: string) => void;
   toggleSMA: (id: '20' | '50' | 'custom', enabled: boolean) => void;
   setColor: (id: '20' | '50' | 'custom', color: string) => void;
   setCustomWindow: (window: number) => void;
-  setPriceData: (data: Array<{ date: string; close: number }>) => void;
+  setPriceData: (data: Array<{ date: string; close: number; volume: number }>) => void;
   setMovingAverageData: (id: string, data: Array<{ date: string; value: number }>) => void;
 }
 

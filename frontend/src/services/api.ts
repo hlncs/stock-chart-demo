@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PricePoint, MovingAveragePoint, AIAnalysis } from '../types';
+import { AddSymbolResponse, AddTransactionRequest, AIAnalysis, MovingAveragePoint, PortfolioData, PricePoint, Transaction } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -35,3 +35,27 @@ export const fetchAIAnalysis = async (
 };
 
 export const createCancelSource = () => axios.CancelToken.source();
+
+export const fetchPortfolio = async (): Promise<PortfolioData> => {
+  const response = await api.get<PortfolioData>('/portfolio');
+  return response.data;
+};
+
+export const fetchTransactions = async (symbol: string): Promise<Transaction[]> => {
+  const response = await api.get<{ transactions: Transaction[] }>(`/portfolio/transactions/${symbol}`);
+  return response.data.transactions;
+};
+
+export const addTransaction = async (req: AddTransactionRequest): Promise<Transaction> => {
+  const response = await api.post<Transaction>('/portfolio/transactions', req);
+  return response.data;
+};
+
+export const addSymbol = async (symbol: string, period = 'max'): Promise<AddSymbolResponse> => {
+  const response = await api.post<AddSymbolResponse>('/symbols', { symbol, period });
+  return response.data;
+};
+
+export const deleteSymbol = async (symbol: string): Promise<void> => {
+  await api.delete(`/symbols/${symbol}`);
+};

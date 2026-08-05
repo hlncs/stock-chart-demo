@@ -11,77 +11,35 @@ Layout
 
 --------------------------------------------------
 
-Ticker List
-
-Chart Area
+Ticker List  |  Chart Area / Portfolio  |  AI Analysis Pane
 
 --------------------------------------------------
 
-Left pane
+Left pane — Ticker List (≈16% width)
 
-20%
+  Header row contains
+    "Ticker List" heading
+    "Portfolio" link/button (toggles the portfolio view)
 
-Scrollable
+  Scrollable list of ticker symbols
+    Each row has a delete icon on hover (confirms before removing)
+    Selecting a symbol loads its chart
 
-Displays ticker symbols
+  "Add Symbol" button at the bottom
+    Opens a dialog: ticker input + history period dropdown
+    Downloads price data from yfinance
+    Refreshes the list on success
 
-Alphabetically sorted
+Centre pane — Chart Area (flex, fills remaining space)
+  When a ticker is selected: shows chart (see below)
+  When Portfolio is active: shows PortfolioPane full-width
 
-Selecting a symbol updates the chart.
-
-Right pane
-
-80%
-
-Contains
-
-Top Toolbar
-
-Chart
-
-Toolbar contains
-
-Period buttons
-
-1M
-
-YTD
-
-1Y
-
-3Y
-
-Below toolbar
-
-Three Moving Average buttons
-
-20 SMA
-
-50 SMA
-
-Custom SMA
-
-All enabled moving averages can be displayed simultaneously on the chart.
-
-Each moving average button
-
-Can be toggled on/off
-
-Remains active after clicking
-
-Can choose a color
-
-Selected color is used for rendering
-
-Multiple buttons can be enabled simultaneously.
-
-Chart updates immediately.
+Right pane — AI Analysis Pane (auto width, hidden when portfolio is active)
+  Border-left separator on md+ screens
 
 State management
-
-React Context
-
-or Zustand.
+  Zustand store (persisted to localStorage)
 
 Use reusable components.
+Responsive layout (stacks vertically on small screens).
 ```
